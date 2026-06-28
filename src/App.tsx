@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { motion } from 'framer-motion';
@@ -9,6 +9,7 @@ import { AppHeader } from './components/layout/AppHeader';
 import { AppFooter } from './components/layout/AppFooter';
 import { OfflineBanner } from './components/ui/OfflineBanner';
 import { Modal } from './components/ui/Modal';
+import { SearchBookingModal } from './components/ui/SearchBookingModal';
 import { KeyboardShortcutsCard } from './components/ui/KeyboardShortcutsCard';
 import { Loader2, Sparkles } from 'lucide-react';
 
@@ -29,6 +30,7 @@ const pageVariant = {
 export const App: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
   const isOnline = useNetworkStatus();
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const {
     showSuccessModal,
     showErrorModal,
@@ -71,7 +73,7 @@ export const App: React.FC = () => {
         />
 
         <OfflineBanner isOnline={isOnline} />
-        <AppHeader theme={theme} onToggleTheme={toggleTheme} />
+        <AppHeader theme={theme} onToggleTheme={toggleTheme} onOpenSearch={() => setIsSearchOpen(true)} />
 
         <main className="flex-1 w-full mx-auto max-w-[700px] px-4 sm:px-6 py-8 sm:py-12">
           {/* Page Hero Header */}
@@ -130,6 +132,8 @@ export const App: React.FC = () => {
           title="Submission Failed"
           message={errorMessage}
         />
+
+        <SearchBookingModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
       </div>
     </BrowserRouter>
   );

@@ -4,11 +4,12 @@ import { useDateTime } from '../../hooks/useDateTime';
 import { useBookingId } from '../../hooks/useBookingId';
 import { ThemeToggle } from '../theme/ThemeToggle';
 import { BookingIdChip } from '../ui/BookingIdChip';
-import { Clock } from 'lucide-react';
+import { Clock, Search } from 'lucide-react';
 
 interface AppHeaderProps {
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
+  onOpenSearch: () => void;
 }
 
 const headerVariant = {
@@ -20,7 +21,7 @@ const headerVariant = {
   },
 };
 
-export const AppHeader: React.FC<AppHeaderProps> = React.memo(({ theme, onToggleTheme }) => {
+export const AppHeader: React.FC<AppHeaderProps> = React.memo(({ theme, onToggleTheme, onOpenSearch }) => {
   const { formattedTime, formattedDate } = useDateTime();
   const { peekLabel } = useBookingId();
 
@@ -47,17 +48,28 @@ export const AppHeader: React.FC<AppHeaderProps> = React.memo(({ theme, onToggle
       </div>
 
       {/* Center / Right controls */}
-      <div className="flex items-center gap-3 sm:gap-4">
+      <div className="flex items-center gap-2 sm:gap-3">
+        {/* Search / Manage Button */}
+        <button
+          type="button"
+          onClick={onOpenSearch}
+          className="inline-flex items-center gap-1.5 rounded-chip bg-apple-blue/10 hover:bg-apple-blue/20 text-apple-blue px-3 py-1.5 text-xs font-semibold transition-all active:scale-95"
+          title="Search or Delete Bookings"
+        >
+          <Search className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Lookup</span>
+        </button>
+
         {/* Next ID Chip (hidden on very small screens if tight) */}
         <div className="hidden xs:block">
           <BookingIdChip label={peekLabel()} />
         </div>
 
         {/* Live Clock */}
-        <div className="hidden sm:flex items-center gap-1.5 rounded-chip bg-surface-2 px-2.5 py-1 text-xs font-mono text-t2 border border-separator/60">
+        <div className="hidden md:flex items-center gap-1.5 rounded-chip bg-surface-2 px-2.5 py-1 text-xs font-mono text-t2 border border-separator/60">
           <Clock className="h-3.5 w-3.5 text-apple-blue animate-pulse" />
           <span className="font-semibold text-t1">{formattedTime}</span>
-          <span className="text-t3 hidden md:inline">| {formattedDate}</span>
+          <span className="text-t3 hidden lg:inline">| {formattedDate}</span>
         </div>
 
         {/* Theme Toggle */}

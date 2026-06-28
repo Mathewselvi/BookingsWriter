@@ -1,6 +1,6 @@
 /**
  * Google Apps Script for Beyond Heaven Resort Booking Manager
- * Configured specifically to match your exact table format & alignment (13 Columns)
+ * Supports: Appending Bookings (POST), Searching Bookings (GET), Deleting Bookings (GET/POST)
  */
 
 function doPost(e) {
@@ -11,67 +11,118 @@ function doPost(e) {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var sheet = ss.getSheetByName('Bookings') || ss.getActiveSheet();
     
-    // Prepare row data exactly matching your 13 fields
+    // Handle Delete Action via POST
+    if (data.action === 'delete') {
+      var searchId = String(data.bookingId || data.id || '').trim().toUpperCase();
+      var rows = sheet.getDataRange().getValues();
+      for (var i = 1; i < rows.length; i++) {
+        var rowId = String(rows[i][0]).trim().toUpperCase();
+        if (rowId === searchId || rowId === 'BH-' + searchId || 'BH-' + rowId === searchId) {
+          sheet.deleteRow(i + 1);
+          return createJsonResponse({ status: 'success', message: 'Booking deleted successfully' });
+        }
+      }
+      return createJsonResponse({ status: 'error', message: 'Booking ID not found' });
+    }
+    
+    // Default: Append New Booking
     var newRow = [
-      data.bookingId || '',                   // Col A: Booking ID (e.g. BH-001)
+      data.bookingId || '',                   // Col A: Booking ID
       data.guestName || '',                   // Col B: Guest Name
-      "'" + String(data.phoneNumber || ''),   // Col C: Phone Number (prefix ' preserves phone number format)
-      formatDateDDMMYYYY(data.checkinDate),   // Col D: Check-in Date (DD/MM/YYYY)
-      formatDateDDMMYYYY(data.checkoutDate),  // Col E: Check-out Date (DD/MM/YYYY)
+      "'" + String(data.phoneNumber || ''),   // Col C: Phone Number
+      formatDateDDMMYYYY(data.checkinDate),   // Col D: Check-in Date
+      formatDateDDMMYYYY(data.checkoutDate),  // Col E: Check-out Date
       Number(data.numberOfNights || 0),       // Col F: Nights
-      data.propertyType || '',                // Col G: Property Type (e.g. 2 Huts, Villa)
-      Number(data.totalAmount || 0),          // Col H: Total Amount (e.g. 14000)
-      Number(data.advancePaid || 0),          // Col I: Advance Paid (e.g. 7000)
-      Number(data.balanceAmount || 0),        // Col J: Balance Amount (e.g. 7000)
-      data.paymentStatus || '',               // Col K: Payment Status (e.g. Full Paid)
-      data.bookingSource || '',               // Col L: Booking Source (e.g. B2B, Walk IN)
-      data.notes || ''                        // Col M: Notes (e.g. 4000 commission)
+      data.propertyType || '',                // Col G: Property Type
+      Number(data.totalAmount || 0),          // Col H: Total Amount
+      Number(data.advancePaid || 0),          // Col I: Advance Paid
+      Number(data.balanceAmount || 0),        // Col J: Balance Amount
+      data.paymentStatus || '',               // Col K: Payment Status
+      data.bookingSource || '',               // Col L: Booking Source
+      data.notes || ''                        // Col M: Notes
     ];
     
-    // Append the new row
     sheet.appendRow(newRow);
-    
     var lastRow = sheet.getLastRow();
     
-    // --- EXACT ALIGNMENT & STYLING MATCHING YOUR TABLE ---
-    
-    // 1. Booking ID (Col A): Bold & Left aligned
-    var idCell = sheet.getRange(lastRow, 1);
-    idCell.setFontWeight('bold');
-    idCell.setHorizontalAlignment('left');
-    
-    // 2. Guest Name (Col B): Left aligned
+    // Alignment & Formatting
+    sheet.getRange(lastRow, 1).setFontWeight('bold').setHorizontalAlignment('left');
     sheet.getRange(lastRow, 2).setHorizontalAlignment('left');
-    
-    // 3. Phone Number (Col C): Right aligned
     sheet.getRange(lastRow, 3).setHorizontalAlignment('right');
-    
-    // 4 & 5. Check-in & Check-out Dates (Col D & E): Center aligned
     sheet.getRange(lastRow, 4, 1, 2).setHorizontalAlignment('center');
-    
-    // 6. Nights (Col F): Right aligned
     sheet.getRange(lastRow, 6).setHorizontalAlignment('right');
-    
-    // 7. Property Type (Col G): Left aligned
     sheet.getRange(lastRow, 7).setHorizontalAlignment('left');
     
-    // 8, 9, 10. Amounts (Col H, I, J): Right aligned plain integer formatting (e.g. 14000)
     var amountRange = sheet.getRange(lastRow, 8, 1, 3);
     amountRange.setHorizontalAlignment('right');
     amountRange.setNumberFormat('0');
     
-    // 11, 12, 13. Status, Source, Notes (Col K, L, M): Left aligned
     sheet.getRange(lastRow, 11, 1, 3).setHorizontalAlignment('left');
     
-    return createJsonResponse({ status: 'success', message: 'Booking appended matching your layout' });
+    return createJsonResponse({ status: 'success', message: 'Booking saved successfully' });
   } catch (error) {
     return createJsonResponse({ status: 'error', message: error.toString() });
   }
 }
 
 /**
- * Converts "2026-06-01" (ISO YYYY-MM-DD) to "01/06/2026" (DD/MM/YYYY)
+ * Handles GET requests for Searching and Deleting Bookings
+ * e.g. ?action=search&id=BH-001 or ?action=delete&id=BH-001
  */
+function doGet(e) {
+  try {
+    var action = (e.parameter.action || '').toLowerCase();
+    var id = e.parameter.id || e.parameter.bookingId;
+    
+    if (!id) {
+      return createJsonResponse({ status: 'error', message: 'Please enter a Booking ID or Serial Number' });
+    }
+    
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Bookings') || ss.getActiveSheet();
+    var data = sheet.getDataRange().getValues();
+    
+    var searchId = String(id).trim().toUpperCase();
+    if (!searchId.startsWith('BH-') && !isNaN(Number(searchId))) {
+      searchId = 'BH-' + String(Number(searchId)).padStart(3, '0');
+    }
+    
+    for (var i = 1; i < data.length; i++) {
+      var rowId = String(data[i][0]).trim().toUpperCase();
+      if (rowId === searchId || rowId === id.toUpperCase() || 'BH-' + rowId === searchId) {
+        
+        if (action === 'delete') {
+          sheet.deleteRow(i + 1);
+          return createJsonResponse({ status: 'success', message: 'Reservation ' + rowId + ' has been permanently deleted.' });
+        }
+        
+        // Search return
+        var bookingDetails = {
+          bookingId: data[i][0],
+          guestName: data[i][1],
+          phoneNumber: String(data[i][2]).replace(/^'/, ''),
+          checkinDate: data[i][3],
+          checkoutDate: data[i][4],
+          numberOfNights: data[i][5],
+          propertyType: data[i][6],
+          totalAmount: data[i][7],
+          advancePaid: data[i][8],
+          balanceAmount: data[i][9],
+          paymentStatus: data[i][10],
+          bookingSource: data[i][11],
+          notes: data[i][12],
+          rowIndex: i + 1
+        };
+        return createJsonResponse({ status: 'success', data: bookingDetails });
+      }
+    }
+    
+    return createJsonResponse({ status: 'error', message: 'No reservation found matching ID "' + id + '".' });
+  } catch (error) {
+    return createJsonResponse({ status: 'error', message: error.toString() });
+  }
+}
+
 function formatDateDDMMYYYY(isoDate) {
   if (!isoDate) return '';
   var parts = String(isoDate).split('-');
