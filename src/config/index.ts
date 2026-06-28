@@ -1,4 +1,4 @@
-export const SCRIPT_URL = import.meta.env.VITE_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbzPk53tNWWdH-2FqH-tecV0MC4P8yG2ZqXHR4i3tOVrLRCNh-tlePm9qM6vwUsEJG8e/exec';
+export const SCRIPT_URL = import.meta.env.VITE_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycby5jVq7zZdEdLGh_peBwGSC6ULeZiJJUxKGThOIHFw3xa_UzFDSkXyn0Ua25TwsneZ-/exec';
 
 export const APP_CONFIG = {
   resortName: 'Beyond Heaven Resort',
